@@ -73,8 +73,11 @@ export default function DashboardPage() {
               <p className="text-gray-700 text-sm mb-4">
                 AI creates 10 emotion-based thumbnail ideas
               </p>
-              <button className="w-full px-4 py-2 bg-gray-400 text-white rounded cursor-not-allowed font-medium">
-                Coming Soon
+              <button
+                onClick={() => router.push('/dashboard/concepts')}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
+              >
+                Generate Concepts
               </button>
             </div>
 
