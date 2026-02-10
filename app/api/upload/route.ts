@@ -132,7 +132,7 @@ Respond with ONLY a JSON object in this exact format:
       user_id: user.id,
       action_type: 'image_upload',
       api_cost: 0.005 * images.length,
-      metadata: { images_uploaded: images.length, images_selected: topImages.length },
+      metadata: { images_uploaded: images.length, images_selected: uploadedImages.length },
     })
 
     return NextResponse.json({
