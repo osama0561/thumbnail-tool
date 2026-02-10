@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     // Check quota
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('quota_remaining')
+      .select('quota_remaining, total_used, api_cost_total')
       .eq('id', user.id)
       .single()
 
