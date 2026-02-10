@@ -60,8 +60,11 @@ export default function DashboardPage() {
               <p className="text-gray-700 text-sm mb-4">
                 Upload 10-20 reference images of yourself
               </p>
-              <button className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
-                Coming Soon
+              <button
+                onClick={() => router.push('/dashboard/upload')}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
+              >
+                Start Upload
               </button>
             </div>
 
