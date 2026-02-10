@@ -58,7 +58,7 @@ export default function DashboardPage() {
             <div className="border border-gray-200 rounded-lg p-6 bg-white">
               <h3 className="font-bold text-lg text-gray-900 mb-2">1. Upload Images</h3>
               <p className="text-gray-700 text-sm mb-4">
-                Upload 10-20 reference images of yourself
+                Upload 3-5 reference images of yourself
               </p>
               <button
                 onClick={() => router.push('/dashboard/upload')}

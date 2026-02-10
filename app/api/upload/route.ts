@@ -15,9 +15,9 @@ export async function POST(request: Request) {
     const formData = await request.formData()
     const images = formData.getAll('images') as File[]
 
-    if (images.length < 10 || images.length > 20) {
+    if (images.length < 3 || images.length > 5) {
       return NextResponse.json(
-        { error: 'Please upload between 10-20 images' },
+        { error: 'Please upload between 3-5 images' },
         { status: 400 }
       )
     }
@@ -119,11 +119,8 @@ Respond with ONLY a JSON object in this exact format:
       }
     }
 
-    // Auto-select top 3-5 images
-    const sorted = uploadedImages.sort((a, b) => b.quality_score - a.quality_score)
-    const topImages = sorted.slice(0, Math.min(5, Math.max(3, Math.floor(sorted.length / 3))))
-
-    for (const img of topImages) {
+    // Select all uploaded images (since we only have 3-5)
+    for (const img of uploadedImages) {
       await supabase
         .from('uploaded_images')
         .update({ is_selected: true })
@@ -141,7 +138,7 @@ Respond with ONLY a JSON object in this exact format:
     return NextResponse.json({
       success: true,
       uploaded: uploadedImages.length,
-      selected: topImages.length,
+      selected: uploadedImages.length,
       images: uploadedImages,
     })
   } catch (error: any) {

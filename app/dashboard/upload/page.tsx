@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, X } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface UploadedImage {
   file: File
@@ -30,8 +31,13 @@ export default function UploadPage() {
       'image/png': ['.png'],
       'image/webp': ['.webp'],
     },
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 5 * 1024 * 1024, // 5MB per image
+    maxFiles: 5,
     onDrop: (acceptedFiles) => {
+      if (images.length + acceptedFiles.length > 5) {
+        setError('Maximum 5 images allowed')
+        return
+      }
       const newImages = acceptedFiles.map((file) => ({
         file,
         preview: URL.createObjectURL(file),
@@ -54,8 +60,8 @@ export default function UploadPage() {
   }
 
   const handleUpload = async () => {
-    if (images.length < 10) {
-      setError('Please upload at least 10 images')
+    if (images.length < 3) {
+      setError('Please upload at least 3 images')
       return
     }
 
@@ -115,7 +121,7 @@ export default function UploadPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload Reference Images</h2>
           <p className="text-gray-700 mb-6">
-            Upload 10-20 images of yourself. AI will analyze and select the best 3-5 for thumbnail generation.
+            Upload 3-5 images of yourself. AI will analyze quality and use them for thumbnail generation.
           </p>
 
           {error && (
@@ -139,7 +145,7 @@ export default function UploadPage() {
             ) : (
               <>
                 <p className="text-lg text-gray-900 mb-2">Drag & drop images here, or click to select</p>
-                <p className="text-sm text-gray-600">JPG, PNG, WEBP up to 10MB each</p>
+                <p className="text-sm text-gray-600">3-5 images, JPG/PNG/WEBP up to 5MB each</p>
               </>
             )}
           </div>
@@ -148,7 +154,7 @@ export default function UploadPage() {
             <div className="mt-8">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-lg text-gray-900">
-                  Selected Images ({images.length}/20)
+                  Selected Images ({images.length}/5)
                 </h3>
                 <button
                   onClick={() => setImages([])}
@@ -179,7 +185,7 @@ export default function UploadPage() {
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={handleUpload}
-                  disabled={uploading || images.length < 10}
+                  disabled={uploading || images.length < 3}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
                   {uploading ? 'Uploading...' : `Upload ${images.length} Images`}

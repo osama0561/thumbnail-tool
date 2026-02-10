@@ -49,7 +49,7 @@ export default function Home() {
             <div className="text-4xl mb-4">📸</div>
             <h3 className="text-xl font-bold mb-3">1. Upload References</h3>
             <p className="text-gray-600">
-              Upload 10-20 images of yourself. AI automatically selects the best 3-5 for generation.
+              Upload 3-5 images of yourself. AI analyzes quality for best results.
             </p>
           </div>
 
