@@ -86,17 +86,32 @@ export default function DashboardPage() {
               <p className="text-gray-700 text-sm mb-4">
                 Create final thumbnails with your chosen concepts
               </p>
-              <button className="w-full px-4 py-2 bg-gray-400 text-white rounded cursor-not-allowed font-medium">
-                Coming Soon
+              <button
+                onClick={() => router.push('/dashboard/generate')}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
+              >
+                Generate Now
               </button>
             </div>
           </div>
 
-          <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <h3 className="font-bold text-gray-900 mb-2">Your Quota</h3>
-            <p className="text-gray-900">
-              <span className="font-bold text-2xl text-blue-600">5</span> free generations remaining
-            </p>
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+              <h3 className="font-bold text-gray-900 mb-2">Your Quota</h3>
+              <p className="text-gray-900">
+                <span className="font-bold text-2xl text-blue-600">5</span> free generations remaining
+              </p>
+            </div>
+
+            <div className="p-4 bg-green-50 rounded-lg border border-green-100">
+              <h3 className="font-bold text-gray-900 mb-2">View Gallery</h3>
+              <button
+                onClick={() => router.push('/dashboard/gallery')}
+                className="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium"
+              >
+                See Your Thumbnails
+              </button>
+            </div>
           </div>
         </div>
       </main>
