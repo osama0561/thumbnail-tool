@@ -43,8 +43,8 @@ Do NOT add any text or overlays to the image.`
           continue
         }
 
-        const base64Data = imagePart.inlineData.data
-        const mimeType = imagePart.inlineData.mimeType
+        const base64Data = imagePart.inlineData.data!
+        const mimeType = imagePart.inlineData.mimeType ?? 'image/jpeg'
         const ext = mimeType === 'image/png' ? 'png' : 'jpg'
         const fileName = `generated/${concept.id}-${Date.now()}.${ext}`
 
