@@ -1,6 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { getGeminiClient, GEMINI_MODELS, callGeminiWithRetry } from '@/lib/gemini/client'
+import { GoogleGenAI } from '@google/genai'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -14,9 +14,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No concepts provided' }, { status: 400 })
     }
 
-    const gemini = getGeminiClient()
-    const model = gemini.getGenerativeModel({ model: GEMINI_MODELS.IMAGE_GEN })
-
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
     const thumbnails = []
 
     for (const concept of concepts) {
@@ -28,17 +26,16 @@ Style: high contrast, vibrant colors, dramatic lighting, close-up face shot, pho
 Background: ${concept.background}.
 Do NOT add any text or overlays to the image.`
 
-        const result = await callGeminiWithRetry(async () => {
-          return await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseModalities: ['IMAGE', 'TEXT'],
-            } as any,
-          })
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: prompt,
+          config: {
+            responseModalities: ['TEXT', 'IMAGE'],
+          },
         })
 
         // Find image part in response
-        const parts = result.response.candidates?.[0]?.content?.parts ?? []
+        const parts = response.candidates?.[0]?.content?.parts ?? []
         const imagePart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image/'))
 
         if (!imagePart?.inlineData) {
@@ -51,14 +48,10 @@ Do NOT add any text or overlays to the image.`
         const ext = mimeType === 'image/png' ? 'png' : 'jpg'
         const fileName = `generated/${concept.id}-${Date.now()}.${ext}`
 
-        // Convert base64 to buffer and upload to Supabase Storage
         const buffer = Buffer.from(base64Data, 'base64')
         const { error: uploadError } = await supabase.storage
           .from('generated-thumbnails')
-          .upload(fileName, buffer, {
-            contentType: mimeType,
-            upsert: true,
-          })
+          .upload(fileName, buffer, { contentType: mimeType, upsert: true })
 
         if (uploadError) {
           console.error('Storage upload error:', uploadError)
