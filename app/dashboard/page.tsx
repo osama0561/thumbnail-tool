@@ -3,6 +3,7 @@
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { Sparkles, Images } from 'lucide-react'
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth()
@@ -14,32 +15,21 @@ export default function DashboardPage() {
     }
   }, [user, loading, router])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return null
+  if (loading || !user) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-bold">Thumbnail Tool</h1>
+              <h1 className="text-xl font-bold text-gray-900">Thumbnail Tool</h1>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">{user.email}</span>
-              <button
-                onClick={signOut}
-                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900"
-              >
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-500">{user.email}</span>
+              <button onClick={signOut} className="text-sm text-gray-700 hover:text-gray-900">
                 Sign out
               </button>
             </div>
@@ -47,72 +37,34 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to Thumbnail Tool!</h2>
-          <p className="text-gray-700 mb-6">
-            Create emotion-based thumbnails for your YouTube videos using AI.
-          </p>
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 mb-3">What do you want to do?</h2>
+          <p className="text-gray-500">Upload your photos, generate concepts, and create thumbnails — all in one place.</p>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="border border-gray-200 rounded-lg p-6 bg-white">
-              <h3 className="font-bold text-lg text-gray-900 mb-2">1. Upload Images</h3>
-              <p className="text-gray-700 text-sm mb-4">
-                Upload 3-5 reference images of yourself
-              </p>
-              <button
-                onClick={() => router.push('/dashboard/upload')}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
-              >
-                Start Upload
-              </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+          <button
+            onClick={() => router.push('/dashboard/concepts')}
+            className="flex flex-col items-center gap-4 p-10 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg"
+          >
+            <Sparkles className="h-12 w-12" />
+            <div>
+              <p className="text-xl font-bold">Create Thumbnails</p>
+              <p className="text-blue-200 text-sm mt-1">Upload → Concepts → Generate</p>
             </div>
+          </button>
 
-            <div className="border border-gray-200 rounded-lg p-6 bg-white">
-              <h3 className="font-bold text-lg text-gray-900 mb-2">2. Generate Concepts</h3>
-              <p className="text-gray-700 text-sm mb-4">
-                AI creates 10 emotion-based thumbnail ideas
-              </p>
-              <button
-                onClick={() => router.push('/dashboard/concepts')}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
-              >
-                Generate Concepts
-              </button>
+          <button
+            onClick={() => router.push('/dashboard/gallery')}
+            className="flex flex-col items-center gap-4 p-10 bg-white text-gray-900 rounded-xl hover:bg-gray-50 transition-colors shadow-lg border border-gray-200"
+          >
+            <Images className="h-12 w-12 text-gray-600" />
+            <div>
+              <p className="text-xl font-bold">My Gallery</p>
+              <p className="text-gray-500 text-sm mt-1">View & download thumbnails</p>
             </div>
-
-            <div className="border border-gray-200 rounded-lg p-6 bg-white">
-              <h3 className="font-bold text-lg text-gray-900 mb-2">3. Generate Thumbnails</h3>
-              <p className="text-gray-700 text-sm mb-4">
-                Create final thumbnails with your chosen concepts
-              </p>
-              <button
-                onClick={() => router.push('/dashboard/generate')}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
-              >
-                Generate Now
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-              <h3 className="font-bold text-gray-900 mb-2">Your Quota</h3>
-              <p className="text-gray-900">
-                <span className="font-bold text-2xl text-blue-600">5</span> free generations remaining
-              </p>
-            </div>
-
-            <div className="p-4 bg-green-50 rounded-lg border border-green-100">
-              <h3 className="font-bold text-gray-900 mb-2">View Gallery</h3>
-              <button
-                onClick={() => router.push('/dashboard/gallery')}
-                className="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium"
-              >
-                See Your Thumbnails
-              </button>
-            </div>
-          </div>
+          </button>
         </div>
       </main>
     </div>
