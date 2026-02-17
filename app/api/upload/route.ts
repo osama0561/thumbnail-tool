@@ -2,6 +2,14 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { getGeminiClient, GEMINI_MODELS, callGeminiWithRetry } from '@/lib/gemini/client'
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '25mb',
+    },
+  },
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
