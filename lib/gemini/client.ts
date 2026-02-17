@@ -9,8 +9,8 @@ export function getGeminiClient() {
 }
 
 export const GEMINI_MODELS = {
-  FLASH: 'gemini-2.0-flash-exp',
-  IMAGE_GEN: 'gemini-2.0-flash-exp',  
+  FLASH: 'gemini-2.0-flash',
+  IMAGE_GEN: 'gemini-2.0-flash',
   IMAGEN: 'imagen-3.0-generate-001',
 }
 
