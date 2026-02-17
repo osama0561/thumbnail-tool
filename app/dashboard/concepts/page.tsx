@@ -4,7 +4,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, X, Sparkles, CheckCircle, Image } from 'lucide-react'
+import { Upload, X, Sparkles, CheckCircle, Image, Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface UploadedImage {
@@ -18,10 +18,24 @@ interface Concept {
   name_en: string
   emotion: string
   expression: string
+  pose: string
+  scene: string
+  background: string
+  arabic_text: string
+  text_position: string
+  text_style: string
   why_it_works: string
 }
 
-type Step = 'upload' | 'concepts' | 'generating' | 'done'
+interface Thumbnail {
+  id: string
+  concept_name_ar: string
+  concept_name_en: string
+  emotion: string
+  public_url: string
+}
+
+type Step = 'upload' | 'concepts' | 'generating' | 'results'
 
 export default function WorkflowPage() {
   const { user, loading } = useAuth()
@@ -43,9 +57,10 @@ export default function WorkflowPage() {
   const [generatingConcepts, setGeneratingConcepts] = useState(false)
   const [conceptError, setConceptError] = useState('')
 
-  // Thumbnail generation state
+  // Generation state
   const [generatingThumbnails, setGeneratingThumbnails] = useState(false)
   const [generateError, setGenerateError] = useState('')
+  const [thumbnails, setThumbnails] = useState<Thumbnail[]>([])
 
   useEffect(() => {
     if (!loading && !user) {
@@ -66,11 +81,10 @@ export default function WorkflowPage() {
         setUploadError('Maximum 5 images allowed')
         return
       }
-      const newImages = acceptedFiles.map((file) => ({
+      setImages((prev) => [...prev, ...acceptedFiles.map((file) => ({
         file,
         preview: URL.createObjectURL(file),
-      }))
-      setImages((prev) => [...prev, ...newImages])
+      }))])
       setUploadError('')
     },
     onDropRejected: (rejections) => {
@@ -107,28 +121,16 @@ export default function WorkflowPage() {
 
         const { error: storageError } = await supabase.storage
           .from('user-uploads')
-          .upload(fileName, img.file, {
-            contentType: img.file.type,
-            upsert: false,
-          })
+          .upload(fileName, img.file, { contentType: img.file.type, upsert: false })
 
         if (storageError) throw new Error(`Failed to upload ${img.file.name}: ${storageError.message}`)
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('user-uploads')
-          .getPublicUrl(fileName)
+        const { data: { publicUrl } } = supabase.storage.from('user-uploads').getPublicUrl(fileName)
 
-        uploadedPaths.push({
-          storagePath: fileName,
-          publicUrl,
-          fileSize: img.file.size,
-          mimeType: img.file.type,
-        })
-
+        uploadedPaths.push({ storagePath: fileName, publicUrl, fileSize: img.file.size, mimeType: img.file.type })
         setUploadProgress(Math.round(((i + 1) / images.length) * 100))
       }
 
-      // Tell the API about the uploaded files (just metadata, no file bytes)
       const response = await fetch('/api/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -151,20 +153,16 @@ export default function WorkflowPage() {
       setConceptError('Please enter a video title')
       return
     }
-
     setGeneratingConcepts(true)
     setConceptError('')
-
     try {
       const response = await fetch('/api/concepts/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoTitle }),
       })
-
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Concept generation failed')
-
       setConcepts(data.concepts)
       setSelectedConcepts(data.concepts.map((c: Concept) => c.id))
     } catch (err: any) {
@@ -185,29 +183,37 @@ export default function WorkflowPage() {
       setGenerateError('Please select at least one concept')
       return
     }
-
     setGeneratingThumbnails(true)
     setGenerateError('')
     setStep('generating')
 
     try {
+      const selected = concepts.filter(c => selectedConcepts.includes(c.id))
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ concepts: concepts.filter(c => selectedConcepts.includes(c.id)) }),
+        body: JSON.stringify({ concepts: selected }),
       })
-
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Generation failed')
-
-      setStep('done')
-      setTimeout(() => router.push('/dashboard/gallery'), 1500)
+      setThumbnails(data.thumbnails)
+      setStep('results')
     } catch (err: any) {
       setGenerateError(err.message)
       setStep('concepts')
     } finally {
       setGeneratingThumbnails(false)
     }
+  }
+
+  const handleDownload = (url: string, name: string) => {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${name}.jpg`
+    a.target = '_blank'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   if (loading || !user) {
@@ -234,27 +240,23 @@ export default function WorkflowPage() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
         {/* Step indicator */}
-        <div className="flex items-center gap-3 text-sm">
-          <span className={`flex items-center gap-1 font-medium ${step === 'upload' ? 'text-blue-600' : 'text-green-600'}`}>
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white ${step === 'upload' ? 'bg-blue-600' : 'bg-green-600'}`}>
-              {step === 'upload' ? '1' : '✓'}
-            </span>
-            Reference Images
-          </span>
-          <span className="text-gray-400">→</span>
-          <span className={`flex items-center gap-1 font-medium ${step === 'concepts' ? 'text-blue-600' : step === 'generating' || step === 'done' ? 'text-green-600' : 'text-gray-400'}`}>
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white ${step === 'concepts' ? 'bg-blue-600' : step === 'generating' || step === 'done' ? 'bg-green-600' : 'bg-gray-300'}`}>
-              {step === 'generating' || step === 'done' ? '✓' : '2'}
-            </span>
-            Concepts
-          </span>
-          <span className="text-gray-400">→</span>
-          <span className={`flex items-center gap-1 font-medium ${step === 'generating' || step === 'done' ? 'text-blue-600' : 'text-gray-400'}`}>
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white ${step === 'generating' || step === 'done' ? 'bg-blue-600' : 'bg-gray-300'}`}>
-              {step === 'done' ? '✓' : '3'}
-            </span>
-            Generate
-          </span>
+        <div className="flex items-center gap-3 text-sm flex-wrap">
+          {(['upload', 'concepts', 'generating', 'results'] as Step[]).map((s, i) => {
+            const labels = ['Reference Images', 'Concepts', 'Generating', 'Results']
+            const past = ['upload', 'concepts', 'generating', 'results'].indexOf(step) > i
+            const active = step === s
+            return (
+              <span key={s} className="flex items-center gap-1">
+                {i > 0 && <span className="text-gray-400">→</span>}
+                <span className={`flex items-center gap-1 font-medium ${active ? 'text-blue-600' : past ? 'text-green-600' : 'text-gray-400'}`}>
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white ${active ? 'bg-blue-600' : past ? 'bg-green-600' : 'bg-gray-300'}`}>
+                    {past ? '✓' : i + 1}
+                  </span>
+                  {labels[i]}
+                </span>
+              </span>
+            )
+          })}
         </div>
 
         {/* STEP 1: Upload */}
@@ -264,16 +266,12 @@ export default function WorkflowPage() {
             <p className="text-gray-600 text-sm mb-6">Upload 3-5 photos of yourself for the AI to use as reference.</p>
 
             {uploadError && (
-              <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
-                {uploadError}
-              </div>
+              <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">{uploadError}</div>
             )}
 
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
-                isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
-              }`}
+              className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}
             >
               <input {...getInputProps()} />
               <Upload className="mx-auto h-10 w-10 text-gray-400 mb-3" />
@@ -291,18 +289,12 @@ export default function WorkflowPage() {
               <div className="mt-6">
                 <div className="flex justify-between items-center mb-3">
                   <p className="font-medium text-gray-900">{images.length}/5 images selected</p>
-                  <button onClick={() => setImages([])} className="text-red-600 hover:text-red-700 text-sm">
-                    Clear all
-                  </button>
+                  <button onClick={() => setImages([])} className="text-red-600 hover:text-red-700 text-sm">Clear all</button>
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">
                   {images.map((img, index) => (
                     <div key={index} className="relative group">
-                      <img
-                        src={img.preview}
-                        alt={`Ref ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                      />
+                      <img src={img.preview} alt={`Ref ${index + 1}`} className="w-full h-24 object-cover rounded-lg border border-gray-200" />
                       <button
                         onClick={() => removeImage(index)}
                         className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -316,14 +308,10 @@ export default function WorkflowPage() {
                 {uploading && (
                   <div className="mb-4">
                     <div className="flex justify-between text-sm text-gray-600 mb-1">
-                      <span>Uploading...</span>
-                      <span>{uploadProgress}%</span>
+                      <span>Uploading...</span><span>{uploadProgress}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full transition-all"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
+                      <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
                     </div>
                   </div>
                 )}
@@ -348,9 +336,7 @@ export default function WorkflowPage() {
               <p className="text-gray-600 text-sm mb-4">Enter your video title and AI will generate 10 emotion-based thumbnail concepts.</p>
 
               {conceptError && (
-                <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
-                  {conceptError}
-                </div>
+                <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">{conceptError}</div>
               )}
 
               <div className="flex gap-3">
@@ -376,9 +362,7 @@ export default function WorkflowPage() {
             {concepts.length > 0 && (
               <div className="bg-white rounded-lg shadow p-6">
                 {generateError && (
-                  <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
-                    {generateError}
-                  </div>
+                  <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">{generateError}</div>
                 )}
 
                 <div className="flex justify-between items-center mb-4">
@@ -398,18 +382,12 @@ export default function WorkflowPage() {
                       <div
                         key={concept.id}
                         onClick={() => toggleConcept(concept.id)}
-                        className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                          isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                        className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
                       >
-                        {isSelected && (
-                          <CheckCircle className="absolute top-3 right-3 h-5 w-5 text-blue-600" />
-                        )}
+                        {isSelected && <CheckCircle className="absolute top-3 right-3 h-5 w-5 text-blue-600" />}
                         <h4 className="font-bold text-gray-900 mb-0.5">{concept.name_ar}</h4>
                         <p className="text-xs text-gray-500 mb-2">{concept.name_en}</p>
-                        <p className="text-sm text-gray-700">
-                          <span className="font-medium">Emotion:</span> {concept.emotion}
-                        </p>
+                        <p className="text-sm text-gray-700"><span className="font-medium">Emotion:</span> {concept.emotion}</p>
                         <p className="text-xs text-gray-500 mt-2 italic">{concept.why_it_works}</p>
                       </div>
                     )
@@ -434,17 +412,47 @@ export default function WorkflowPage() {
           <div className="bg-white rounded-lg shadow p-12 text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-6" />
             <h2 className="text-xl font-bold text-gray-900 mb-2">Generating Thumbnails...</h2>
-            <p className="text-gray-600">AI is creating {selectedConcepts.length} thumbnail{selectedConcepts.length !== 1 ? 's' : ''} based on your concepts.</p>
+            <p className="text-gray-600">AI is creating {selectedConcepts.length} thumbnail{selectedConcepts.length !== 1 ? 's' : ''}. This may take a minute.</p>
           </div>
         )}
 
-        {/* STEP 4: Done */}
-        {step === 'done' && (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="h-10 w-10 text-green-600" />
+        {/* STEP 4: Results */}
+        {step === 'results' && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Your Thumbnails ({thumbnails.length})</h2>
+              <button
+                onClick={() => { setStep('concepts'); setThumbnails([]) }}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                ← Generate More
+              </button>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Done! Redirecting to gallery...</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {thumbnails.map((thumb) => (
+                <div key={thumb.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <img
+                    src={thumb.public_url}
+                    alt={thumb.concept_name_en}
+                    className="w-full aspect-video object-cover"
+                  />
+                  <div className="p-3 flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-gray-900 text-sm">{thumb.concept_name_ar}</p>
+                      <p className="text-xs text-gray-500">{thumb.concept_name_en} · {thumb.emotion}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDownload(thumb.public_url, thumb.concept_name_en)}
+                      className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>

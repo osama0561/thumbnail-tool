@@ -10,7 +10,7 @@ export function getGeminiClient() {
 
 export const GEMINI_MODELS = {
   FLASH: 'gemini-2.0-flash',
-  IMAGE_GEN: 'gemini-2.0-flash',
+  IMAGE_GEN: 'gemini-2.5-flash-preview-04-17',
   IMAGEN: 'imagen-3.0-generate-001',
 }
 
