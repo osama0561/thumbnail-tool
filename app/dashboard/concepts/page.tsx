@@ -194,7 +194,7 @@ export default function WorkflowPage() {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conceptIds: selectedConcepts }),
+        body: JSON.stringify({ concepts: concepts.filter(c => selectedConcepts.includes(c.id)) }),
       })
 
       const data = await response.json()

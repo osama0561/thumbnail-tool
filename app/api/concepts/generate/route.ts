@@ -66,14 +66,8 @@ Generate all 10 concepts with variety in emotions: shock, curiosity, frustration
       throw new Error('Invalid concepts format')
     }
 
-    // Create a session ID for this batch of concepts
-    const sessionId = crypto.randomUUID()
-
-    // Save concepts to database
-    const conceptsToInsert = concepts.slice(0, 10).map((concept, index) => ({
-      user_id: user.id,
-      video_title: videoTitle,
-      concept_number: index + 1,
+    const enrichedConcepts = concepts.slice(0, 10).map((concept: any, index: number) => ({
+      id: `concept-${index}`,
       name_ar: concept.name_ar,
       name_en: concept.name_en,
       emotion: concept.emotion,
@@ -85,31 +79,11 @@ Generate all 10 concepts with variety in emotions: shock, curiosity, frustration
       text_position: concept.text_position || 'top',
       text_style: concept.text_style || 'bold',
       why_it_works: concept.why_it_works || 'Emotion-driven design',
-      session_id: sessionId,
     }))
-
-    const { data: savedConcepts, error: dbError } = await supabase
-      .from('thumbnail_concepts')
-      .insert(conceptsToInsert)
-      .select()
-
-    if (dbError) {
-      console.error('Database error:', dbError)
-      throw new Error('Failed to save concepts')
-    }
-
-    // Log usage
-    await supabase.from('usage_logs').insert({
-      user_id: user.id,
-      action_type: 'concept_generation',
-      api_cost: 0.01,
-      metadata: { video_title: videoTitle, concepts_generated: savedConcepts.length },
-    })
 
     return NextResponse.json({
       success: true,
-      concepts: savedConcepts,
-      session_id: sessionId,
+      concepts: enrichedConcepts,
     })
   } catch (error: any) {
     console.error('Concept generation error:', error)
